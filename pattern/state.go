@@ -102,7 +102,7 @@ func lexPathPart(lexer *lexer) stateFn {
     for {
         r := lexer.readRune()
 
-        if r == RIGHT_CURLY_BRACKET || r == COLON || r == PATH_SEPARATOR || r == eof {
+        if r == LEFT_CURLY_BRACKET || r == RIGHT_CURLY_BRACKET || r == COLON || r == PATH_SEPARATOR || r == eof {
             lexer.unreadRune()
 
             lexer.emit(PathPartToken(ctxBuffer.Bytes()))
