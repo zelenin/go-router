@@ -25,8 +25,8 @@ func main() {
 
     postRtr := router.New()
 
-    // /posts/{:id:[\d]+}
-    postRtr.Get(`/{:id:[\d]+}`, postHandler)
+    // /posts/{id:[\d]+}
+    postRtr.Get(`/{id:[\d]+}`, postHandler)
 
     // /posts/comments
     postRtr.Get("/comments", commentsHandler)
