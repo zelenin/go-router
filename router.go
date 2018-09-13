@@ -7,6 +7,7 @@ import (
     "log"
     "net/http"
     "regexp"
+    "strings"
 )
 
 const MethodAll = "*"
@@ -227,7 +228,7 @@ func normalizePattern(pattern string) string {
         }
     }
 
-    return patternBuf.String()
+    return strings.Replace(patternBuf.String(), `//`, `/`, -1)
 }
 
 const tagNamePattern = `[a-zA-Z][\w]*`
