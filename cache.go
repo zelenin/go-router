@@ -8,39 +8,43 @@ import (
 
 var errNotFound = errors.New("not found")
 
-type routeCache struct {
-    mu     sync.Mutex
-    routes map[string]map[string]*route
+// @todo invalidation
+type pipeCache struct {
+    mu    sync.Mutex
+    pipes map[string]map[string]*pipe
 }
 
-func (cache *routeCache) Get(req *http.Request) (*route, error) {
+func (cache *pipeCache) Get(req *http.Request) (*pipe, error) {
     cache.mu.Lock()
     defer cache.mu.Unlock()
 
-    if _, ok := cache.routes[req.Method]; !ok {
+    _, ok := cache.pipes[req.Method]
+    if !ok {
         return nil, errNotFound
     }
 
-    if _, ok := cache.routes[req.Method][req.URL.String()]; !ok {
+    _, ok = cache.pipes[req.Method][req.URL.String()]
+    if !ok {
         return nil, errNotFound
     }
 
-    return cache.routes[req.Method][req.URL.String()], nil
+    return cache.pipes[req.Method][req.URL.String()], nil
 }
 
-func (cache *routeCache) Set(req *http.Request, r *route) {
+func (cache *pipeCache) Set(req *http.Request, p *pipe) {
     cache.mu.Lock()
     defer cache.mu.Unlock()
 
-    if _, ok := cache.routes[req.Method]; !ok {
-        cache.routes[req.Method] = map[string]*route{}
+    _, ok := cache.pipes[req.Method]
+    if !ok {
+        cache.pipes[req.Method] = map[string]*pipe{}
     }
 
-    cache.routes[req.Method][req.URL.String()] = r
+    cache.pipes[req.Method][req.URL.String()] = p
 }
 
-func newRouteCache() *routeCache {
-    return &routeCache{
-        routes: map[string]map[string]*route{},
+func newPipeCache() *pipeCache {
+    return &pipeCache{
+        pipes: map[string]map[string]*pipe{},
     }
 }

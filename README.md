@@ -8,25 +8,28 @@ Deadly simple router
 package main
 
 import (
-    "net/http"
-    "log"
     "github.com/zelenin/go-router"
+    "log"
+    "net/http"
+    "strings"
 )
 
 func main() {
     rtr := router.New()
 
-    rtr.Add("/login", []string{"GET", "POST"}, loginHandler)
+    rtr.Route("/login", []string{"GET", "POST"}, http.HandlerFunc(loginHandler))
 
     rtr.Get("/user/:username", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
         params := router.Params(req)
         res.Write([]byte("Username: " + params.Get("username")))
     }))
 
+    rtr.Pipe("/", logger)
+
     postRtr := router.New()
 
     // /posts/{id:[\d]+}
-    postRtr.Get(`/{id:[\d]+}`, postHandler)
+    postRtr.Get(`/{id:[\d]+}`, postHandler{})
 
     // /posts/comments
     postRtr.Get("/comments", commentsHandler)
@@ -45,6 +48,23 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
+}
+
+func loginHandler(res http.ResponseWriter, req *http.Request) {
+    res.Write([]byte("Login page"))
+}
+
+type postHandler struct{}
+
+func (handler postHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+    res.Write([]byte("Post page"))
+}
+
+func logger(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        log.Printf("Connection from %s", r.RemoteAddr)
+        next.ServeHTTP(w, r)
+    })
 }
 
 ```
