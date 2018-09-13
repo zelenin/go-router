@@ -18,10 +18,10 @@ func main() {
 
     rtr.Add("/login", []string{"GET", "POST"}, loginHandler)
 
-    rtr.Get("/user/:username", func(res http.ResponseWriter, req *http.Request) {
+    rtr.Get("/user/:username", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
         params := router.Params(req)
         res.Write([]byte("Username: " + params.Get("username")))
-    })
+    }))
 
     postRtr := router.New()
 

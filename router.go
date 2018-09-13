@@ -14,7 +14,7 @@ const MethodAll = "*"
 
 type Option func(*Router)
 
-func WithNotFoundHandler(notFoundHandler http.HandlerFunc) Option {
+func WithNotFoundHandler(notFoundHandler http.Handler) Option {
     return func(router *Router) {
         router.notFoundHandler = notFoundHandler
     }
@@ -31,7 +31,7 @@ func New(options ...Option) *Router {
     }
 
     if rtr.notFoundHandler == nil {
-        rtr.notFoundHandler = http.NotFound
+        rtr.notFoundHandler = http.NotFoundHandler()
     }
 
     return rtr
@@ -41,12 +41,12 @@ type route struct {
     pattern   string
     rePattern *regexp.Regexp
     methods   []string
-    handler   http.HandlerFunc
+    handler   http.Handler
 }
 
 type Router struct {
     routes          map[string]*route
-    notFoundHandler http.HandlerFunc
+    notFoundHandler http.Handler
     cache           *routeCache
 }
 
@@ -56,49 +56,49 @@ func (router *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
     route := router.match(req)
     if route != nil {
-        route.handler(res, req)
+        route.handler.ServeHTTP(res, req)
     } else {
         router.notFoundHandler.ServeHTTP(res, req)
     }
 }
 
-func (router *Router) Get(pattern string, handler http.HandlerFunc) {
+func (router *Router) Get(pattern string, handler http.Handler) {
     router.add(pattern, []string{http.MethodGet}, handler)
 }
 
-func (router *Router) Head(pattern string, handler http.HandlerFunc) {
+func (router *Router) Head(pattern string, handler http.Handler) {
     router.add(pattern, []string{http.MethodHead}, handler)
 }
 
-func (router *Router) Post(pattern string, handler http.HandlerFunc) {
+func (router *Router) Post(pattern string, handler http.Handler) {
     router.add(pattern, []string{http.MethodPost}, handler)
 }
 
-func (router *Router) Put(pattern string, handler http.HandlerFunc) {
+func (router *Router) Put(pattern string, handler http.Handler) {
     router.add(pattern, []string{http.MethodPut}, handler)
 }
 
-func (router *Router) Patch(pattern string, handler http.HandlerFunc) {
+func (router *Router) Patch(pattern string, handler http.Handler) {
     router.add(pattern, []string{http.MethodPatch}, handler)
 }
 
-func (router *Router) Delete(pattern string, handler http.HandlerFunc) {
+func (router *Router) Delete(pattern string, handler http.Handler) {
     router.add(pattern, []string{http.MethodDelete}, handler)
 }
 
-func (router *Router) Connect(pattern string, handler http.HandlerFunc) {
+func (router *Router) Connect(pattern string, handler http.Handler) {
     router.add(pattern, []string{http.MethodConnect}, handler)
 }
 
-func (router *Router) Options(pattern string, handler http.HandlerFunc) {
+func (router *Router) Options(pattern string, handler http.Handler) {
     router.add(pattern, []string{http.MethodOptions}, handler)
 }
 
-func (router *Router) Trace(pattern string, handler http.HandlerFunc) {
+func (router *Router) Trace(pattern string, handler http.Handler) {
     router.add(pattern, []string{http.MethodTrace}, handler)
 }
 
-func (router *Router) All(pattern string, handler http.HandlerFunc) {
+func (router *Router) All(pattern string, handler http.Handler) {
     router.add(pattern, []string{MethodAll}, handler)
 }
 
@@ -108,11 +108,11 @@ func (router *Router) SubRoute(pattern string, subRouter *Router) {
     }
 }
 
-func (router *Router) Add(pattern string, methods []string, handler http.HandlerFunc) {
+func (router *Router) Add(pattern string, methods []string, handler http.Handler) {
     router.add(pattern, methods, handler)
 }
 
-func (router *Router) add(pattern string, methods []string, handler http.HandlerFunc) {
+func (router *Router) add(pattern string, methods []string, handler http.Handler) {
     if pattern == "" {
         log.Panicf("http: invalid pattern '%s'", pattern)
     }
