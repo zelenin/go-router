@@ -22,7 +22,7 @@ type Router struct {
 }
 
 func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	r.serveMux.ServeHTTP(res, req)
+	chainMiddleware(r.middlewares)(r.serveMux).ServeHTTP(res, req)
 }
 
 func (r *Router) HandleFunc(pattern string, handlerFunc http.HandlerFunc) {
@@ -30,7 +30,7 @@ func (r *Router) HandleFunc(pattern string, handlerFunc http.HandlerFunc) {
 }
 
 func (r *Router) Handle(pattern string, handler http.Handler) {
-	r.serveMux.Handle(pattern, chainMiddleware(r.middlewares)(handler))
+	r.serveMux.Handle(pattern, handler)
 }
 
 func (r *Router) Group(pattern string, fn func(*Router)) {
