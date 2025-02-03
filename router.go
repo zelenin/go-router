@@ -2,23 +2,22 @@ package router
 
 import (
 	"net/http"
+	"strings"
 )
 
 func New() *Router {
-	return newRouter("", []func(http.Handler) http.Handler{})
+	return newRouter([]func(http.Handler) http.Handler{})
 }
 
-func newRouter(basePath string, middlewares []func(http.Handler) http.Handler) *Router {
+func newRouter(middlewares []func(http.Handler) http.Handler) *Router {
 	return &Router{
 		serveMux:    http.NewServeMux(),
-		basePath:    basePath,
 		middlewares: middlewares,
 	}
 }
 
 type Router struct {
 	serveMux    *http.ServeMux
-	basePath    string
 	middlewares []func(http.Handler) http.Handler
 }
 
@@ -31,10 +30,6 @@ func (r *Router) HandleFunc(pattern string, handlerFunc http.HandlerFunc) {
 }
 
 func (r *Router) Handle(pattern string, handler http.Handler) {
-	method, path := parsePattern(pattern)
-	path = joinBasePathAndPattern(r.basePath, path)
-	pattern = joinMethodAndPath(method, path)
-
 	r.serveMux.Handle(pattern, chainMiddleware(r.middlewares)(handler))
 }
 
@@ -43,9 +38,9 @@ func (r *Router) Group(pattern string, fn func(*Router)) {
 		pattern += "/"
 	}
 
-	subRouter := newRouter(joinBasePathAndPattern(r.basePath, pattern), r.middlewares)
+	subRouter := newRouter(r.middlewares)
 	fn(subRouter)
-	r.serveMux.Handle(subRouter.basePath, subRouter)
+	r.serveMux.Handle(pattern, http.StripPrefix(strings.TrimSuffix(pattern, "/"), subRouter))
 }
 
 func (r *Router) Pipe(middleware func(http.Handler) http.Handler) {
