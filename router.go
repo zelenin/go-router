@@ -6,23 +6,26 @@ import (
 )
 
 func New() *Router {
-	return newRouter([]func(http.Handler) http.Handler{})
+	return newRouter()
 }
 
-func newRouter(middlewares []func(http.Handler) http.Handler) *Router {
+func newRouter() *Router {
+	mux := http.NewServeMux()
 	return &Router{
-		serveMux:    http.NewServeMux(),
-		middlewares: middlewares,
+		serveMux:    mux,
+		middlewares: []func(http.Handler) http.Handler{},
+		pipe:        mux,
 	}
 }
 
 type Router struct {
 	serveMux    *http.ServeMux
 	middlewares []func(http.Handler) http.Handler
+	pipe        http.Handler
 }
 
 func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	chainMiddleware(r.middlewares)(r.serveMux).ServeHTTP(res, req)
+	r.pipe.ServeHTTP(res, req)
 }
 
 func (r *Router) HandleFunc(pattern string, handlerFunc http.HandlerFunc) {
@@ -38,21 +41,22 @@ func (r *Router) Group(pattern string, fn func(*Router)) {
 		pattern += "/"
 	}
 
-	subRouter := newRouter(r.middlewares)
+	subRouter := newRouter()
 	fn(subRouter)
 	r.serveMux.Handle(pattern, http.StripPrefix(strings.TrimSuffix(pattern, "/"), subRouter))
 }
 
 func (r *Router) Pipe(middleware func(http.Handler) http.Handler) {
 	r.middlewares = append(r.middlewares, middleware)
+	r.pipe = chainMiddleware(r.middlewares)(r.serveMux)
 }
 
 func chainMiddleware(middlewares []func(http.Handler) http.Handler) func(http.Handler) http.Handler {
 	return func(final http.Handler) http.Handler {
-		last := final
+		next := final
 		for i := len(middlewares) - 1; i >= 0; i-- {
-			last = middlewares[i](last)
+			next = middlewares[i](next)
 		}
-		return last
+		return next
 	}
 }
