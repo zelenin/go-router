@@ -1,6 +1,7 @@
 package router
 
 import (
+	"io/fs"
 	"net/http"
 	"strings"
 )
@@ -44,6 +45,14 @@ func (r *Router) Group(pattern string, fn func(*Router)) {
 	subRouter := newRouter()
 	fn(subRouter)
 	r.serveMux.Handle(pattern, http.StripPrefix(strings.TrimSuffix(pattern, "/"), subRouter))
+}
+
+func (r *Router) FileServerFS(pattern string, f fs.FS) {
+	if pattern[len(pattern)-1] != '/' {
+		pattern += "/"
+	}
+
+	r.serveMux.Handle(pattern, http.StripPrefix(strings.TrimSuffix(pattern, "/"), http.FileServerFS(NewFileFallbackFs(f, "index.html"))))
 }
 
 func (r *Router) Pipe(middleware func(http.Handler) http.Handler) {

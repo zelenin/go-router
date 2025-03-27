@@ -11,12 +11,24 @@ import (
 	"github.com/zelenin/go-router"
 	"log"
 	"net/http"
+	"io/fs"
+	"embed"
 )
+
+//go:embed dist
+var UiAssets embed.FS
 
 func main() {
 	rtr := router.New()
 
 	rtr.Pipe(logger)
+
+	uiFs, err := fs.Sub(UiAssets, "dist")
+	if err != nil {
+		log.Fatalf("Failed to open ui: %v", err)
+	}
+
+	rtr.FileServerFS("/", uiFs)
 
 	rtr.HandleFunc("GET /ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("pong"))
